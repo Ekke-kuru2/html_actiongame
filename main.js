@@ -12,6 +12,8 @@ document.onselectstart = function(){
     return false;
 }
 
+//ステージ生成
+
 
 //canvas関係のプロパティ
 var canvas;
