@@ -13,6 +13,8 @@ document.onselectstart = function(){
 }
 
 //ステージ生成
+var Stages ={};
+Stages.stage1 = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
 
 
 //canvas関係のプロパティ
