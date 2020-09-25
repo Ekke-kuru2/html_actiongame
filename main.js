@@ -80,12 +80,12 @@ function init(){
         y_Grad[i]=0;
     }*/
 
-    jump_s_1=new Audio();
+    /*jump_s_1=new Audio();
     jump_s_2=new Audio();
     jump_s_1.src = "./assets/punch-swing1.mp3";
     jump_s_1.load();
     jump_s_2.src = "./assets/landing1.mp3";
-    jump_s_2.load();
+    jump_s_2.load();*/
 
 
     Asset.loadAssets(function(){//アセット読み込み完了したら、、
@@ -103,9 +103,12 @@ Asset.assets=[//Assetの定義
     {type:'image',name:'mainchar',src:'./assets/maincharactor2.png'},
     {type:'image',name:'enemy',src:'./assets/teki.png'},
     {type:'image',name:'start_menu',src:'./assets/start_menu2.png'},
-    {type:'image',name:'gameover',src:'./assets/gameover.png'}
+    {type:'image',name:'gameover',src:'./assets/gameover.png'},
+    {type:'audio',name:'jump_sound1',src:'./assets/punch-swing1.mp3'},
+    {type:'audio',name:'jump_sound2',src:'./assets/landing1.mp3'}
 ];
 Asset.images={};//種類が画像のアセットの格納場所
+Asset.audios={};//種類が音声のアセットの格納場所
 Asset.loadAssets=function(onComplete){//Assetオブジェクトのなかの画像読み込み関数
     var total=Asset.assets.length;//アセットの合計数
     var loadCount=0;//読み込みが完了したアセット数
@@ -119,10 +122,13 @@ Asset.loadAssets=function(onComplete){//Assetオブジェクトのなかの画�
     };
 
     //アセットの種類に応じた読み込み処理関数を呼ぶ
-    Asset.assets.forEach(function(asset){
+    Asset.assets.forEach(function(asset){//forEach関数は与えられた関数を配列の各要素に対して一度ずつ実行する。与えられた関数の引数の一番目は現在処理されている配列の要素
         switch(asset.type){
             case 'image':
                 Asset._loadImage(asset,onLoad);
+                break;
+            case 'audio':
+                Asset._loadAudio(asset,onLoad);
                 break;
         }
     });
@@ -134,6 +140,13 @@ Asset._loadImage=function(asset,onLoad){//読み込みを実際に担当する�
     image.onload=onLoad;//読み終わったら、関数に与えられたonLoadを呼ぶ
 
     Asset.images[asset.name]=image;//かくのう
+};
+Asset._loadAudio=function(asset,onLoad){
+    var audio=new Audio();
+    audio.src=asset.src;
+    audio.onload=onLoad;
+
+    Asset.audios[asset.name]=audio;
 };
 
 
@@ -181,7 +194,7 @@ function key_Input(){
     }    
     else if(gameState_Flag==1){
         if(mainCharactor.ground==1){
-        jump_s_1.play();
+        Asset.audios['jump_sound1'].play();
         mainCharactor.jump=1;
         jump_h=1;
         }
@@ -221,7 +234,7 @@ function update(timestamp){//ゲーム本体 毎フレーム呼ばれる
 
     if(mainCharactor.Y<=0){//地面との当たり判定
         if(mainCharactor.ground==0){
-            jump_s_2.play();
+            Asset.audios['jump_sound2'].play();
         }
         mainCharactor.Y=0;
         mainCharactor.ground=1;
