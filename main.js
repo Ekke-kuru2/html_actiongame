@@ -137,16 +137,15 @@ Asset.loadAssets=function(onComplete){//Assetオブジェクトのなかの画�
 Asset._loadImage=function(asset,onLoad){//読み込みを実際に担当する人
     var image=new Image();//新しいImageオブジェクト
     image.src=asset.src;//この関数内のImageオブジェクトに関数に与えられたアセットの場所を指定
+    Asset.images[asset.name]=image;//かくのう
     image.onload=onLoad;//読み終わったら、関数に与えられたonLoadを呼ぶ
 
-    Asset.images[asset.name]=image;//かくのう
 };
 Asset._loadAudio=function(asset,onLoad){
     var audio=new Audio();
     audio.src=asset.src;
-    audio.onload=onLoad;
-
     Asset.audios[asset.name]=audio;
+    audio.onloadeddata=onLoad;//audio はonloadeddata！！
 };
 
 
@@ -224,7 +223,6 @@ function end_menu(){//endメニュー
 }
 function update(timestamp){//ゲーム本体 毎フレーム呼ばれる
     //updateが呼ばれるタイミングが一定じゃなくてもゲームの速度を一定にする
-
     var delta=0;//前回フレームからの経過時間(単位は秒)
     if(lastTimestamp != null){
         delta=(timestamp - lastTimestamp)/1000;//秒に直す
@@ -310,7 +308,7 @@ function update(timestamp){//ゲーム本体 毎フレーム呼ばれる
 
     if(mainCharactor.Y<=0){//地面にめりこんじゃった時用
         if(mainCharactor.ground==0){
-            jump_s_2.play();
+            Asset.audios['jump_sound2'].play();
         }
         mainCharactor.Y=0;
     }
