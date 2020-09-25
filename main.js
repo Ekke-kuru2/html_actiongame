@@ -14,17 +14,13 @@ document.onselectstart = function(){
 
 //ステージ生成
 var Stages ={};
-Stages.stage1 = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
-
+Stages.stage1 = [0,1,0,0,1,0,0,0,1,0,0,0,0,1,0,0,0,0,0,1,0,1,0,0,1,1,1,1,1];
 
 //canvas関係のプロパティ
 var canvas;
 var ctx;
 var SCREEN_WIDTH=500;
 var SCREEN_HEIGHT=400;
-
-var canvas_dom;
-
 
 //ゲーム本体のプロパティ
 var lastTimestamp=null;//前回フレームのタイムスタンプ
@@ -35,21 +31,13 @@ var old_score=0;
 var time_span=2.5;
 var jump_h=0;
 
-//Audio
-var jump_s_1;
-var jump_s_2;
 
-var Enemy_x=[];//敵のｘ座標
-var Enemy_alive=[];//敵が生きてるかどうか
 
-var y_Grad=[];//グラデーションするためにメインキャラのｙ座標を保持する配列
-var x_Grad=[0,0];//グラデーション用のｘ座標
 
 //フラグ
 var gameState_Flag=0;//ゲームの状態 0:start_menu 1:game 2:ending
 
 function init(){
-
     console.log("Thank you for playing This Game!!!");
     console.log("-copyright- 2020 kerry.starfree.jp");
 
@@ -59,33 +47,12 @@ function init(){
     canvas.width=SCREEN_WIDTH;
     canvas.height=SCREEN_HEIGHT;
     ctx.font="30px sans-serif";
-    //****/
     //色を指定
     ctx.strokeStyle="yellow";  //線の色を青に指定
     ctx.fillStyle="black";     //塗りつぶしの色を赤に指定
-
-    canvas_dom=document.getElementById('maincanvas');
-    canvas_dom.addEventListener("touchstart", touchStartHandler, false);
-    canvas_dom.addEventListener('touchend',touchEndHanler , false);
-
-    Enemy_x[0]=500;
-    Enemy_x[1]=500;
-    Enemy_x[2]=500;
-    
-    Enemy_alive[0]=0;
-    Enemy_alive[1]=0;
-    Enemy_alive[2]=0;
-
-    /*for(i=0;i<=49;i++){//y_Gradをすべて0で初期化
-        y_Grad[i]=0;
-    }*/
-
-    /*jump_s_1=new Audio();
-    jump_s_2=new Audio();
-    jump_s_1.src = "./assets/punch-swing1.mp3";
-    jump_s_1.load();
-    jump_s_2.src = "./assets/landing1.mp3";
-    jump_s_2.load();*/
+    //タッチイベントリスナー
+    canvas.addEventListener("touchstart", touchStartHandler, false);
+    canvas.addEventListener('touchend',touchEndHanler , false);
 
 
     Asset.loadAssets(function(){//アセット読み込み完了したら、、
@@ -97,7 +64,6 @@ function init(){
 
 //******assets
 var Asset={};//Assetというオブジェクトを定義
-
 Asset.assets=[//Assetの定義
     {type:'image',name:'background',src:'./assets/background.png'},
     {type:'image',name:'mainchar',src:'./assets/maincharactor2.png'},
@@ -150,13 +116,15 @@ Asset._loadAudio=function(asset,onLoad){
 
 
 var mainCharactor={//キャラのプロパティとか
-    X:220,
     Y:0,
     ground:1,//設置の判定
     jump:0,//jump
     jump_v0:16,//初速
     gravity:-30,//重力
-    speed:0//y軸の移動速度
+    speed:0,//y軸の移動速度
+
+    map:0,//今いる場所のマップの左端の添え字
+    X:0,//マップの格子ぴったりからどれだけずれているか(0<=X<=50)
 };
 
 
@@ -164,36 +132,45 @@ var mainCharactor={//キャラのプロパティとか
 //キー入力
 document.addEventListener("keydown", keyDownHandler,false);
 function keyDownHandler(e) {
-    if(e.keyCode==32){//space
-        key_Input();
+    switch (e.keyCode) {
+        case 32://space
+        case 38://upkey
+            key_jump_Input();
+            break;
+        case 37://leftkey
+            key_left_Input();
+            break;
+        case 39://rightkey
+            key_right_Input();
+            break;
     }
 }
 document.addEventListener("keyup", keyUpHandler,false);
 function keyUpHandler(e) {
-    if(e.keyCode==32){//space
-        key_End();
+    switch (e.keyCode) {
+        case 32:
+        case 38:
+            key_jump_End();
+            break;
     }
 }
 //タッチ入力
-
 function touchStartHandler(e){
-    key_Input();
+    key_jump_Input();
 } 
-
-
 function touchEndHanler(e) {
     // タッチイベントの処理を記述
-    key_End();
+    key_jump_End();
     e.preventDefault();
 }
-function key_Input(){
+function key_jump_Input(){
     if(gameState_Flag==0){
         gameState_Flag=1;
         requestAnimationFrame(update);
     }    
     else if(gameState_Flag==1){
         if(mainCharactor.ground==1){
-        Asset.audios['jump_sound1'].play();
+        //Asset.audios['jump_sound1'].play();
         mainCharactor.jump=1;
         jump_h=1;
         }
@@ -202,13 +179,28 @@ function key_Input(){
         location.reload(false);
     }
 }
-function key_End(){
+function key_jump_End(){
     if(gameState_Flag==1){
         mainCharactor.jump=0;
         jump_h=0.9;
     }
 }
+function key_left_Input(){
 
+}
+function key_right_Input(){
+    mainCharactor.X+=50;
+    if (mainCharactor.X>=50) {
+        if (mainCharactor.map>=Stages.stage1.length) {
+            
+        }
+        else{
+            mainCharactor.map++; 
+        }
+        mainCharactor.X=0;
+
+    }
+}
 
 function start_menu(){//スタートメニュー
     ctx.clearRect(0,0,canvas.width,canvas.height);//canvas clear
@@ -221,6 +213,7 @@ function end_menu(){//endメニュー
     ctx.fillText(score,300,210);
     requestAnimationFrame(end_menu);
 }
+
 function update(timestamp){//ゲーム本体 毎フレーム呼ばれる
     //updateが呼ばれるタイミングが一定じゃなくてもゲームの速度を一定にする
     var delta=0;//前回フレームからの経過時間(単位は秒)
@@ -242,7 +235,7 @@ function update(timestamp){//ゲーム本体 毎フレーム呼ばれる
     }
 
 
-    if(0<=score&&score<=50){//スコアによって敵が出てくる間隔が変わる
+    /*if(0<=score&&score<=50){//スコアによって敵が出てくる間隔が変わる
         time_span = Math.floor( Math.random() * 11 ) + 15;
         time_span=time_span*0.1;
     }
@@ -253,7 +246,7 @@ function update(timestamp){//ゲーム本体 毎フレーム呼ばれる
     else if(120<=score){
         time_span = Math.floor( Math.random() * 19 ) + 7;
         time_span=time_span*0.1;
-    }
+    }*/
 
     //**********処理*******// 
     if(mainCharactor.ground){//ジャンプの処理
@@ -270,7 +263,7 @@ function update(timestamp){//ゲーム本体 毎フレーム呼ばれる
             mainCharactor.speed*=jump_h;
         }
     }
-
+/*
     if(second>time_span){//敵を出すかどうか
         for(i=0;i<=2;i++){
             if(Enemy_alive[i]==0){
@@ -303,7 +296,7 @@ function update(timestamp){//ゲーム本体 毎フレーム呼ばれる
             requestAnimationFrame(end_menu);
             return 0;
         }
-    }
+    }*/
 
 
     if(mainCharactor.Y<=0){//地面にめりこんじゃった時用
@@ -318,22 +311,33 @@ function update(timestamp){//ゲーム本体 毎フレーム呼ばれる
     //毎フレーム呼ぶよってやつ
     requestAnimationFrame(update);
 }
+function drawMap(){
+    for (let i = 0; i < 10; i++) {
+        var draw_num=mainCharactor.map+i;
+        var draw_x=i*50;
+        draw_x-=mainCharactor.X;
+        switch (Stages.stage1[draw_num]) {
+            case 0:break;
+            case 1:
+                ctx.drawImage(Asset.images['enemy'],draw_x,250);
+                break;
+        }
 
-var color;
+    }
+    
+  
+};
+
+
 function render(){//ゲーム本体のレンダリング関数
     //まずcanvasをクリア
     ctx.clearRect(0,0,canvas.width,canvas.height);
     ctx.drawImage(Asset.images['background'],0,0);
-        
-    //敵の描写
-    for(i=0;i<=2;i++){
-        if(Enemy_alive[i]==1){
-            ctx.drawImage(Asset.images['enemy'],Enemy_x[i],270,30,30);
-        }
-    }
+
+    drawMap();
     
     //メインキャラクターを表示
-    ctx.drawImage(Asset.images['mainchar'],mainCharactor.X,240-mainCharactor.Y);
+    ctx.drawImage(Asset.images['mainchar'],225,250-mainCharactor.Y);
     ctx.fillText("SCORE:"+score,5,35);
 
 }
