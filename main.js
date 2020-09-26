@@ -311,6 +311,14 @@ function update(timestamp){//ゲーム本体 毎フレーム呼ばれる
     //毎フレーム呼ぶよってやつ
     requestAnimationFrame(update);
 }
+
+function rotateCanvas(degree){
+    ctx.translate(SCREEN_WIDTH/2,SCREEN_HEIGHT/2);
+    ctx.rotate(degree * Math.PI / 180);
+    ctx.translate(-1 * SCREEN_WIDTH/2 , -1 * SCREEN_HEIGHT/2);
+}
+
+
 function drawMap(){
     for (let i = 0; i < 10; i++) {
         var draw_num=mainCharactor.map+i;
