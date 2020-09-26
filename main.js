@@ -117,31 +117,38 @@ Asset._loadAudio=function(asset,onLoad){
 
 var mainCharactor={//キャラのプロパティとか
     Y:0,
-    ground:1,//設置の判定
-    jump:0,//jump
+    ground:1,//接地の判定
+    jump:0,//jumpボタンが押されてるかのフラグ
     jump_v0:16,//初速
     gravity:-30,//重力
     speed:0,//y軸の移動速度
+    translation:0,//移動のフラぐ1でleft２でright
 
     map:0,//今いる場所のマップの左端の添え字
     X:0,//マップの格子ぴったりからどれだけずれているか(0<=X<=50)
 };
 
 
-
+pressedkey=[false,false,false];
 //キー入力
 document.addEventListener("keydown", keyDownHandler,false);
 function keyDownHandler(e) {
     switch (e.keyCode) {
         case 32://space
         case 38://upkey
-            key_jump_Input();
+            if (gameState_Flag==0) {
+                gameState_Flag=1;
+                requestAnimationFrame(update);
+            }
+            else if(gameState_Flag==2){
+                location.reload(false);}
+            else{pressedkey[0]=true;}
             break;
         case 37://leftkey
-            key_left_Input();
+            pressedkey[1]=true;
             break;
         case 39://rightkey
-            key_right_Input();
+            pressedkey[2]=true;
             break;
     }
 }
@@ -150,57 +157,29 @@ function keyUpHandler(e) {
     switch (e.keyCode) {
         case 32:
         case 38:
-            key_jump_End();
+            pressedkey[0]=false;
+            break;
+        case 37:
+            pressedkey[1]=false;
+            break;
+        case 39:
+            pressedkey[2]=false;
             break;
     }
 }
 //タッチ入力
 function touchStartHandler(e){
-    key_jump_Input();
+
 } 
 function touchEndHanler(e) {
     // タッチイベントの処理を記述
-    key_jump_End();
+
     e.preventDefault();
 }
-function key_jump_Input(){
-    if(gameState_Flag==0){
-        gameState_Flag=1;
-        requestAnimationFrame(update);
-    }    
-    else if(gameState_Flag==1){
-        if(mainCharactor.ground==1){
-        //Asset.audios['jump_sound1'].play();
-        mainCharactor.jump=1;
-        jump_h=1;
-        }
-    }
-    else if(gameState_Flag==2){
-        location.reload(false);
-    }
-}
-function key_jump_End(){
-    if(gameState_Flag==1){
-        mainCharactor.jump=0;
-        jump_h=0.9;
-    }
-}
-function key_left_Input(){
 
-}
-function key_right_Input(){
-    mainCharactor.X+=50;
-    if (mainCharactor.X>=50) {
-        if (mainCharactor.map>=Stages.stage1.length) {
-            
-        }
-        else{
-            mainCharactor.map++; 
-        }
-        mainCharactor.X=0;
 
-    }
-}
+
+
 
 function start_menu(){//スタートメニュー
     ctx.clearRect(0,0,canvas.width,canvas.height);//canvas clear
@@ -222,6 +201,26 @@ function update(timestamp){//ゲーム本体 毎フレーム呼ばれる
     }
     lastTimestamp=timestamp;
     second+=delta;
+
+    if (pressedkey[0]) {//jumpkeyのフラグが立っている
+        if(mainCharactor.ground==1){
+            Asset.audios['jump_sound1'].play();
+            mainCharactor.jump=1;
+            jump_h=1;
+    }}
+    else{//jumpkryのフラグが降りている
+        mainCharactor.jump=0;
+        jump_h=0.9;
+    }
+
+    if (pressedkey[2]) {mainCharactor.translation=1;}
+    if (pressedkey[1]) {
+        mainCharactor.translation=2;
+    }
+    if(pressedkey[1]==false&&pressedkey[2]==false){
+        mainCharactor.translation=0;
+    }
+
 
     if(mainCharactor.Y<=0){//地面との当たり判定
         if(mainCharactor.ground==0){
@@ -263,6 +262,25 @@ function update(timestamp){//ゲーム本体 毎フレーム呼ばれる
             mainCharactor.speed*=jump_h;
         }
     }
+    if(mainCharactor.translation==1){
+        if (mainCharactor.X>=50) {
+        if (!(mainCharactor.map+10>=Stages.stage1.length)) {
+            mainCharactor.map++;      
+        }
+        mainCharactor.X=0;
+        }
+        if(!(mainCharactor.map+10>=Stages.stage1.length)){mainCharactor.X+=250*delta;}
+    }
+    if (mainCharactor.translation==2) {
+        if(!(mainCharactor.map==0)){mainCharactor.X-=250*delta;}
+        if (mainCharactor.X<0){
+            if (!(mainCharactor.map<=0)) {
+                mainCharactor.map--;
+            }
+            mainCharactor.X=50;//ハマった
+        }
+    }
+
 /*
     if(second>time_span){//敵を出すかどうか
         for(i=0;i<=2;i++){
@@ -320,7 +338,7 @@ function rotateCanvas(degree){
 
 
 function drawMap(){
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 11; i++) {
         var draw_num=mainCharactor.map+i;
         var draw_x=i*50;
         draw_x-=mainCharactor.X;
@@ -349,6 +367,4 @@ function render(){//ゲーム本体のレンダリング関数
     ctx.fillText("SCORE:"+score,5,35);
 
 }
-
-
 
