@@ -14,7 +14,7 @@ document.onselectstart = function(){
 
 //ステージ生成
 var Stages ={};
-Stages.stage1 = [0,1,0,0,1,0,0,0,1,0,0,0,0,1,0,0,0,0,0,1,0,1,0,0,1,1,1,1,1];
+Stages.stage1 = [0,1,0,0,2,2,2,0,1,0,0,0,0,1,0,0,0,0,0,1,0,1,0,0,1,1,1,1,1];
 
 //canvas関係のプロパティ
 var canvas;
@@ -51,8 +51,8 @@ function init(){
     ctx.strokeStyle="yellow";  //線の色を青に指定
     ctx.fillStyle="black";     //塗りつぶしの色を赤に指定
     //タッチイベントリスナー
-    canvas.addEventListener("touchstart", touchStartHandler, false);
-    canvas.addEventListener('touchend',touchEndHanler , false);
+    /*canvas.addEventListener("touchstart", touchStartHandler, false);
+    canvas.addEventListener('touchend',touchEndHanler , false);*/
 
 
     Asset.loadAssets(function(){//アセット読み込み完了したら、、
@@ -70,6 +70,7 @@ Asset.assets=[//Assetの定義
     {type:'image',name:'enemy',src:'./assets/teki.png'},
     {type:'image',name:'start_menu',src:'./assets/start_menu2.png'},
     {type:'image',name:'gameover',src:'./assets/gameover.png'},
+    {type:'image',name:'block',src:'./assets/block.png'},
     {type:'audio',name:'jump_sound1',src:'./assets/punch-swing1.mp3'},
     {type:'audio',name:'jump_sound2',src:'./assets/landing1.mp3'}
 ];
@@ -129,7 +130,7 @@ var mainCharactor={//キャラのプロパティとか
 };
 
 
-pressedkey=[false,false,false];
+pressedkey=[false,false,false];//jump,left,right,
 //キー入力
 document.addEventListener("keydown", keyDownHandler,false);
 function keyDownHandler(e) {
@@ -167,7 +168,7 @@ function keyUpHandler(e) {
             break;
     }
 }
-//タッチ入力
+/*タッチ入力
 function touchStartHandler(e){
 
 } 
@@ -175,7 +176,7 @@ function touchEndHanler(e) {
     // タッチイベントの処理を記述
 
     e.preventDefault();
-}
+}*/
 
 
 
@@ -193,6 +194,24 @@ function end_menu(){//endメニュー
     requestAnimationFrame(end_menu);
 }
 
+
+function collision(){
+    if(mainCharactor.Y<=0){//地面との当たり判定
+        if(mainCharactor.ground==0){
+            Asset.audios['jump_sound2'].play();
+        }
+        mainCharactor.Y=0;
+        mainCharactor.ground=1;
+    }
+    else{
+        mainCharactor.ground=0;
+    }
+
+
+    
+}
+
+
 function update(timestamp){//ゲーム本体 毎フレーム呼ばれる
     //updateが呼ばれるタイミングが一定じゃなくてもゲームの速度を一定にする
     var delta=0;//前回フレームからの経過時間(単位は秒)
@@ -208,7 +227,7 @@ function update(timestamp){//ゲーム本体 毎フレーム呼ばれる
             mainCharactor.jump=1;
             jump_h=1;
     }}
-    else{//jumpkryのフラグが降りている
+    else{//jumpkeyのフラグが降りている
         mainCharactor.jump=0;
         jump_h=0.9;
     }
@@ -222,30 +241,7 @@ function update(timestamp){//ゲーム本体 毎フレーム呼ばれる
     }
 
 
-    if(mainCharactor.Y<=0){//地面との当たり判定
-        if(mainCharactor.ground==0){
-            Asset.audios['jump_sound2'].play();
-        }
-        mainCharactor.Y=0;
-        mainCharactor.ground=1;
-    }
-    else{
-        mainCharactor.ground=0;
-    }
-
-
-    /*if(0<=score&&score<=50){//スコアによって敵が出てくる間隔が変わる
-        time_span = Math.floor( Math.random() * 11 ) + 15;
-        time_span=time_span*0.1;
-    }
-    else if(50<=score&&score<=120){
-        time_span = Math.floor( Math.random() * 16 ) + 10;
-        time_span=time_span*0.1;
-    }
-    else if(120<=score){
-        time_span = Math.floor( Math.random() * 19 ) + 7;
-        time_span=time_span*0.1;
-    }*/
+    collision();
 
     //**********処理*******// 
     if(mainCharactor.ground){//ジャンプの処理
@@ -344,9 +340,11 @@ function drawMap(){
         draw_x-=mainCharactor.X;
         switch (Stages.stage1[draw_num]) {
             case 0:break;
-            case 1:
+            case 1://enemy
                 ctx.drawImage(Asset.images['enemy'],draw_x,250);
                 break;
+            case 2://block
+                ctx.drawImage(Asset.images['block'],draw_x,250);
         }
 
     }
