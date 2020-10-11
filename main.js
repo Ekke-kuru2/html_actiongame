@@ -14,7 +14,7 @@ document.onselectstart = function(){
 
 //ステージ生成
 var Stages ={};
-Stages.stage1 = [0,1,0,0,2,2,2,0,1,0,0,0,0,1,0,0,0,0,0,1,0,1,0,0,1,1,1,1,1];
+Stages.stage1 = [0,1,0,0,0,0,0,0,2,2,2,0,0,1,0,0,0,0,0,1,0,1,0,0,1,1,1,1,1];
 
 //canvas関係のプロパティ
 var canvas;
@@ -25,11 +25,10 @@ var SCREEN_HEIGHT=400;
 //ゲーム本体のプロパティ
 var lastTimestamp=null;//前回フレームのタイムスタンプ
 var second=0;//敵を出すための秒数
-var second2=0;//ジャンプ処理に使う秒数
 var score=0;
 var old_score=0;
-var time_span=2.5;
-var jump_h=0;
+
+
 
 
 
@@ -121,10 +120,11 @@ var mainCharactor={//キャラのプロパティとか
     ground:1,//接地の判定
     jump:0,//jumpボタンが押されてるかのフラグ
     jump_v0:16,//初速
+    jump_h:0,//ジャンプを加速するか減速するか
     gravity:-30,//重力
     speed:0,//y軸の移動速度
     translation:0,//移動のフラぐ1でleft２でright
-
+    translock:0,//ロック１で左移動をロック、2で右移動をロック
     map:0,//今いる場所のマップの左端の添え字
     X:0,//マップの格子ぴったりからどれだけずれているか(0<=X<=50)
 };
@@ -196,16 +196,105 @@ function end_menu(){//endメニュー
 
 
 function collision(){
-    if(mainCharactor.Y<=0){//地面との当たり判定
-        if(mainCharactor.ground==0){
-            Asset.audios['jump_sound2'].play();
+    //maincharactor:225
+    switch (Stages.stage1[mainCharactor.map+5]) {
+        case 0:
+            if(mainCharactor.Y<=0){//地面との当たり判定
+                if(mainCharactor.ground==0){
+                    Asset.audios['jump_sound2'].play();
+                }
+                mainCharactor.Y=0;
+                mainCharactor.ground=1;
+            }
+            else{
+                mainCharactor.ground=0;
+            }
+        mainCharactor.translock=0;
+            break;
+        case 1://enemy
+        if(mainCharactor.Y<=0){//地面との当たり判定
+            if(mainCharactor.ground==0){
+                Asset.audios['jump_sound2'].play();
+            }
+            mainCharactor.Y=0;
+            mainCharactor.ground=1;
         }
-        mainCharactor.Y=0;
-        mainCharactor.ground=1;
+        else{
+            mainCharactor.ground=0;
+        }
+            if (Math.abs(-25+mainCharactor.X)<45&&mainCharactor.Y<45) {gameState_Flag=2;}
+            mainCharactor.translock=0;
+            break;
+        case 2://block
+
+                if (mainCharactor.Y>=50) {
+                    mainCharactor.ground=2;
+                }
+                else{
+                    mainCharactor.translock=2;
+                    //Lock
+                }
+            
+            if(mainCharactor.Y<=50){//地面との当たり判定
+                if(mainCharactor.ground==0){
+                    Asset.audios['jump_sound2'].play();
+                }
+                mainCharactor.Y=50;
+                mainCharactor.ground=2;
+            }
+            else{
+                mainCharactor.ground=0;
+            }
+            break;
     }
-    else{
-        mainCharactor.ground=0;
+        switch (Stages.stage1[mainCharactor.map+6]) {
+        case 0:
+            if(mainCharactor.Y<=0){//地面との当たり判定
+                if(mainCharactor.ground==0){
+                    Asset.audios['jump_sound2'].play();
+                }
+                mainCharactor.Y=0;
+                mainCharactor.ground=1;
+            }
+            else{
+                mainCharactor.ground=0;
+            }
+            mainCharactor.translock=0;
+        break;
+        case 1://enemy
+        if(mainCharactor.Y<=0){//地面との当たり判定
+            if(mainCharactor.ground==0){
+                Asset.audios['jump_sound2'].play();
+            }
+            mainCharactor.Y=0;
+            mainCharactor.ground=1;
+        }
+        else{
+            mainCharactor.ground=0;
+        }
+            if (Math.abs(-75+mainCharactor.X)<45&&mainCharactor.Y<45) {gameState_Flag=2;}
+            mainCharactor.translock=0;
+            break;
+        case 2://block
+            if (mainCharactor.Y>=50) {
+                mainCharactor.ground=2;
+            }
+            else{
+                mainCharactor.translock=1;
+                //Lock
+            }
+        if(mainCharactor.Y<=50){//地面との当たり判定
+            if(mainCharactor.ground==0){
+                Asset.audios['jump_sound2'].play();
+            }
+            if(mainCharactor.ground==2){mainCharactor.Y=50;}
+        }
+        else{
+            mainCharactor.ground=0;
+        }
+            break;
     }
+
 
 
     
@@ -221,15 +310,17 @@ function update(timestamp){//ゲーム本体 毎フレーム呼ばれる
     lastTimestamp=timestamp;
     second+=delta;
 
+    
+
     if (pressedkey[0]) {//jumpkeyのフラグが立っている
-        if(mainCharactor.ground==1){
+        if(mainCharactor.ground==1||mainCharactor.ground==2){
             Asset.audios['jump_sound1'].play();
             mainCharactor.jump=1;
-            jump_h=1;
+            mainCharactor.jump_h=1;
     }}
     else{//jumpkeyのフラグが降りている
         mainCharactor.jump=0;
-        jump_h=0.9;
+        mainCharactor.jump_h=0.9;
     }
 
     if (pressedkey[2]) {mainCharactor.translation=1;}
@@ -244,21 +335,21 @@ function update(timestamp){//ゲーム本体 毎フレーム呼ばれる
     collision();
 
     //**********処理*******// 
-    if(mainCharactor.ground){//ジャンプの処理
+    if(mainCharactor.ground||mainCharactor.ground==2){//ジャンプの処理
         if(mainCharactor.jump==1){
         mainCharactor.speed=0;
         mainCharactor.speed=mainCharactor.jump_v0;
         mainCharactor.Y+=mainCharactor.speed;
         }
     }
-    else{
+    if(mainCharactor.ground==0){
         mainCharactor.speed+=mainCharactor.gravity*delta;
         mainCharactor.Y+=mainCharactor.speed;
         if(mainCharactor.speed>0){
-            mainCharactor.speed*=jump_h;
+            mainCharactor.speed*=mainCharactor.jump_h;
         }
     }
-    if(mainCharactor.translation==1){
+    if(mainCharactor.translation==1&&!(mainCharactor.translock==1)){//左に移動
         if (mainCharactor.X>=50) {
         if (!(mainCharactor.map+10>=Stages.stage1.length)) {
             mainCharactor.map++;      
@@ -267,57 +358,20 @@ function update(timestamp){//ゲーム本体 毎フレーム呼ばれる
         }
         if(!(mainCharactor.map+10>=Stages.stage1.length)){mainCharactor.X+=250*delta;}
     }
-    if (mainCharactor.translation==2) {
-        if(!(mainCharactor.map==0)){mainCharactor.X-=250*delta;}
+    if (mainCharactor.translation==2&&!(mainCharactor.translock==2)) {//右に移動
+        if(!(mainCharactor.map<0)){mainCharactor.X-=250*delta;}
         if (mainCharactor.X<0){
-            if (!(mainCharactor.map<=0)) {
+            if (!(mainCharactor.map<0)) {
                 mainCharactor.map--;
             }
             mainCharactor.X=50;//ハマった
         }
     }
 
-/*
-    if(second>time_span){//敵を出すかどうか
-        for(i=0;i<=2;i++){
-            if(Enemy_alive[i]==0){
-                Enemy_alive[i]=1;
-                break;
-            }
-        }
-        second=0;
-    }
-    for(i=0;i<=2;i++){//敵の座標移動
-        if(Enemy_alive[i]==1){
-            Enemy_x[i]-=(1.7*score+150)*delta;
-            if(Enemy_x[i]<=0){
-                Enemy_x[i]=500;
-                Enemy_alive[i]=0;
-                score+=4;
-            }
-        }
-    }
-    for(i=0;i<=2;i++){//敵との当たり判定
-        if(mainCharactor.X<=Enemy_x[i]&&Enemy_x[i]<=mainCharactor.X+60&&mainCharactor.Y+240<=270&&mainCharactor.Y+60+240>=270){
-            gameState_Flag=2;
-            cancelAnimationFrame(update);
-            requestAnimationFrame(end_menu);
-            return 0;
-        }
-        else if(mainCharactor.X<=Enemy_x[i]+30&&Enemy_x[i]+30<=mainCharactor.X+60&&mainCharactor.Y+240<=270&&mainCharactor.Y+60+240>=270){
-            gameState_Flag=2;
-            cancelAnimationFrame(update);
-            requestAnimationFrame(end_menu);
-            return 0;
-        }
-    }*/
-
-
-    if(mainCharactor.Y<=0){//地面にめりこんじゃった時用
-        if(mainCharactor.ground==0){
-            Asset.audios['jump_sound2'].play();
-        }
-        mainCharactor.Y=0;
+    if (gameState_Flag==2) {//ゲームオーバーのフラグがたっている
+        cancelAnimationFrame(update);
+        requestAnimationFrame(end_menu);
+        return 0;
     }
 
     //canvasの描画
@@ -333,7 +387,7 @@ function rotateCanvas(degree){
 }
 
 
-function drawMap(){
+function _drawMap(){
     for (let i = 0; i < 11; i++) {
         var draw_num=mainCharactor.map+i;
         var draw_x=i*50;
@@ -351,14 +405,12 @@ function drawMap(){
     
   
 };
-
-
 function render(){//ゲーム本体のレンダリング関数
     //まずcanvasをクリア
     ctx.clearRect(0,0,canvas.width,canvas.height);
     ctx.drawImage(Asset.images['background'],0,0);
 
-    drawMap();
+    _drawMap();
     
     //メインキャラクターを表示
     ctx.drawImage(Asset.images['mainchar'],225,250-mainCharactor.Y);
